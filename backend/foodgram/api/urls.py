@@ -1,6 +1,6 @@
-from django.contrib import admin
+from api.authentication import signup, token
 from django.urls import path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('v1/auth/signup/', signup, name='signup'),
 ]
