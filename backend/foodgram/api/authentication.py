@@ -34,7 +34,7 @@ def signup(request):
     serializer = SignupSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        send_code_for_confirm(user)
+        # send_code_for_confirm(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
