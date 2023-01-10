@@ -1,6 +1,6 @@
-from api.authentication import signup, token
-from django.urls import path
+from django.urls import include, path
 
 urlpatterns = [
-    path('users/', signup, name='signup'),
+    path('', include('djoser.urls')),
+    path('', include('djoser.urls.authtoken'))
 ]
