@@ -24,7 +24,8 @@ INSTALLED_APPS = [
     'djoser',
 
     'api',
-    'users'
+    'users',
+    'foodgram_app'
 ]
 
 MIDDLEWARE = [

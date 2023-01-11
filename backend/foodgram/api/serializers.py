@@ -4,14 +4,20 @@ from django.forms import ValidationError
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
-# from reviews.models import Category, Comment, Genre, Review, Title
+from foodgram_app.models import (Ingredient, Tag, Recipe, FavouriteRecipe)
 from users.models import User
 
 
-# class CategorySerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Category
-#         fields = ('name', 'slug')
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'color', 'slug')
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ingredient
+        fields = ('name', 'measurement_unit')
 
 
 # class GenreSerializer(serializers.ModelSerializer):

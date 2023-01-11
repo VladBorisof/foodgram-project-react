@@ -7,7 +7,20 @@ from rest_framework.pagination import (LimitOffsetPagination,
                                        PageNumberPagination)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from api.serializers import TagSerializer
+from foodgram_app.models import Ingredient, Tag
 from users.models import User
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+
+
+class IngredientViewSet(viewsets.ModelViewSet):
+    queryset = Ingredient.objects.all()
+    serializer_class = ''
 
 
 class UserViewSet(viewsets.ModelViewSet):
