@@ -1,11 +1,30 @@
 import datetime
 
-from django.forms import ValidationError
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
+
 from foodgram_app.models import (Ingredient, Tag, Recipe, FavouriteRecipe)
 from users.models import User
+
+
+class CustomCreateUserSerializers(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        style=dict(input_type='Пароль', placeholder='Пароль')
+    )
+
+    class Meta:
+        model = User
+        fields = '__all__'
+
+    def create(self, validated_data):
+        validated_data['password'] = make_password(
+            validated_data.get('password')
+        )
+        return super(CustomCreateUserSerializers, self).create(validated_data)
 
 
 class TagSerializer(serializers.ModelSerializer):

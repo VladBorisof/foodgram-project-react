@@ -1,14 +1,14 @@
 from api.permissions import (IsAdminOrReadOnly, IsRoleAdmin,
                              ReviewCommentCustomPermission)
 from api.serializers import (UserEditSerializer, UserSerializer)
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.pagination import (LimitOffsetPagination,
                                        PageNumberPagination)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.serializers import TagSerializer
+from api.serializers import (IngredientSerializer, TagSerializer)
 from foodgram_app.models import Ingredient, Tag
 from users.models import User
 
@@ -16,11 +16,13 @@ from users.models import User
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = permissions.AllowAny
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
-    serializer_class = ''
+    serializer_class = IngredientSerializer
+    permission_classes = permissions.AllowAny
 
 
 class UserViewSet(viewsets.ModelViewSet):
