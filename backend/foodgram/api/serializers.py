@@ -39,6 +39,45 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('name', 'measurement_unit')
 
 
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('email', 'username', 'first_name', 'last_name')
+        model = User
+
+
+class UserEditSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ('email', 'username', 'first_name', 'last_name')
+        model = User
+
+
+class SignupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password')
+        model = User
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError(
+                'Создать пользователя с именем "me" не разрешено.'
+            )
+        return value
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    confirmation_code = serializers.CharField(required=True)
+
+    class Meta:
+        fields = ('username', 'confirmation_code')
+        model = User
+
+
+class RecipeSerializers(serializers.ModelSerializer):
+    author = ''
+
+
 # class GenreSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = Genre
@@ -92,48 +131,6 @@ class IngredientSerializer(serializers.ModelSerializer):
 #         if not (year <= current_year):
 #             raise ValidationError('Произведение еще не вышло')
 #         return year
-
-
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        fields = ('email', 'username', 'first_name', 'last_name')
-        model = User
-
-
-class UserEditSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = ('email', 'username', 'first_name', 'last_name')
-        model = User
-
-
-class SignupSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        fields = ('email', 'id', 'username', 'first_name', 'last_name', 'password')
-        model = User
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'Создать пользователя с именем "me" не разрешено.'
-            )
-        return value
-
-
-class TokenSerializer(serializers.ModelSerializer):
-    confirmation_code = serializers.CharField(required=True)
-
-    class Meta:
-        fields = ('username', 'confirmation_code')
-        model = User
-
-
-class GetTitle:
-    requires_context = True
-
-    def __call__(self, serializer_field):
-        return serializer_field.context.get('view').kwargs.get('title_id')
 
 
 # class ReviewSerializer(serializers.ModelSerializer):

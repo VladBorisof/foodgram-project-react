@@ -69,11 +69,6 @@ class Recipe(models.Model):
         related_name='recipe',
         verbose_name='tags'
     )
-    ingredients = models.ManyToManyField(
-        Ingredient,
-        related_name='recipe',
-        verbose_name='ingredients'
-    )
     cooking_time = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name='cooking time'
@@ -85,6 +80,24 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class IngredientRecipe(models.Model):
+    ingredient = models.ForeignKey(
+        Ingredient,
+        on_delete=models.CASCADE,
+        related_name='',
+        verbose_name=''
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name='',
+        verbose_name=''
+    )
+    amount = models.PositiveIntegerField(
+        verbose_name='Count'
+    )
 
 
 class FavouriteRecipe(models.Model):
@@ -100,19 +113,7 @@ class FavouriteRecipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='recipe'
     )
-    is_in_shopping_cart = models.BooleanField(
-        default=False,
-        verbose_name='is in shopping cart'
-    )
-    is_favorited = models.BooleanField(
-        default=False,
-        verbose_name='is in favorites'
-    )
     added_to_favorites = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='added at'
-    )
-    added_to_shopping_cart = models.DateTimeField(
         auto_now_add=True,
         verbose_name='added at'
     )
@@ -124,9 +125,39 @@ class FavouriteRecipe(models.Model):
                 name='unique_favorite_recipe',
             )
         ]
-        verbose_name = ('Favorites',)
-        verbose_name_plural = ('Favorites',)
-        ordering = ['-added_to_favorites', '-added_to_shopping_cart']
+        verbose_name = 'Favorite'
+        verbose_name_plural = 'Favorites'
+        ordering = ['-added_to_favorites']
 
     def __str__(self):
         return f'{self.user.username} - {self.recipe.name}'
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='shopping_cart',
+        on_delete=models.CASCADE,
+        verbose_name='user'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        related_name='in_shoping_cart',
+        on_delete=models.CASCADE,
+        verbose_name='recipe'
+    )
+    added_to_shoping_cart = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='added at'
+    )
+
+    class Meta:
+        ordering = ('-id',)
+        verbose_name = 'ShopingCart'
+        verbose_name_plural = 'ShopingCarts'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'recipe'],
+                name='unique_shoping_cart',
+            )
+        ]

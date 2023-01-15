@@ -49,3 +49,24 @@ class User(AbstractUser):
         ordering = ('-id',)
         verbose_name = 'User'
         verbose_name_plural = 'Users'
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='user'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='author'
+    )
+
+    class Meta:
+        pass
+
+    def __str__(self):
+        return f'{self.user} follow to {self.author}'
