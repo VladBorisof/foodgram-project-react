@@ -5,7 +5,9 @@ from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
 
-from foodgram_app.models import (Ingredient, Tag, Recipe, FavouriteRecipe)
+from foodgram_app.models import (
+    Ingredient, IngredientRecipe, Tag, Recipe, FavouriteRecipe
+)
 from users.models import User
 
 
@@ -74,8 +76,24 @@ class TokenSerializer(serializers.ModelSerializer):
         model = User
 
 
+class IngredientRecipeSerializers(serializers.ModelSerializer):
+    id = ''
+    name = ''
+    measurement_unit = ''
+    amount = ''
+
+    class Meta:
+        model = IngredientRecipe
+        fields = '__all__'
+
+
 class RecipeSerializers(serializers.ModelSerializer):
     author = ''
+    tag = TagSerializer(read_only=True, many=True)
+    image = ''
+    ingredients = IngredientRecipeSerializers(read_only=True, many=True)
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
 
 
 # class GenreSerializer(serializers.ModelSerializer):

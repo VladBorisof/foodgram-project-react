@@ -1,15 +1,21 @@
-from api.permissions import (IsAdminOrReadOnly, IsRoleAdmin,
-                             ReviewCommentCustomPermission)
-from api.serializers import (UserEditSerializer, UserSerializer)
-from rest_framework import filters, status, viewsets, permissions
+from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
-from rest_framework.pagination import (LimitOffsetPagination,
-                                       PageNumberPagination)
+from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.serializers import (IngredientSerializer, TagSerializer)
-from foodgram_app.models import Ingredient, Tag
+from api.filters import RecipeFilter
+from api.pagination import LimitPagePagination
+from api.permissions import (IsRoleAdmin, AuthorOrReadOnly)
+from api.serializers import (IngredientSerializer,
+                             TagSerializer,
+                             UserEditSerializer,
+                             UserSerializer,
+                             RecipeSerializers)
+from foodgram_app.models import (Ingredient,
+                                 Tag,
+                                 Recipe)
 from users.models import User
 
 
@@ -57,3 +63,28 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all()
+    serializer_class = RecipeSerializers
+    pagination_class = LimitPagePagination
+    filter_backends = DjangoFilterBackend
+    filter_class = RecipeFilter
+    permission_classes = AuthorOrReadOnly
+
+    @action(detail=True,
+            methods=['post', 'delete'],
+            permission_classes=permissions.IsAuthenticated)
+    def favorite(self, request, pk=None):
+        pass
+
+    @action(detail=True,
+            methods=['post', 'delete'],
+            permission_classes=permissions.IsAuthenticated)
+    def shopping_cart(self, request, pk=None):
+        pass
+
+    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    def download_shopping_cart(self, request):
+        pass
