@@ -5,9 +5,12 @@ from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from rest_framework.validators import UniqueTogetherValidator
 
-from foodgram_app.models import (
-    Ingredient, IngredientRecipe, Tag, Recipe, FavouriteRecipe
-)
+from foodgram_app.models import (Ingredient,
+                                 IngredientRecipe,
+                                 Tag,
+                                 Recipe,
+                                 FavouriteRecipe,
+                                 ShoppingCart)
 from users.models import User
 
 
@@ -96,91 +99,23 @@ class RecipeSerializers(serializers.ModelSerializer):
     is_in_shopping_cart = serializers.SerializerMethodField()
 
 
-# class GenreSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Genre
-#         fields = ('name', 'slug')
+class FavoriteSerializers(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='recipe.id')
+    name = serializers.ReadOnlyField(source='recipe.name')
+    image = serializers.ImageField(source='recipe.image')
+    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
+
+    class Meta:
+        model = FavouriteRecipe
+        fields = '__all__'
 
 
-# class TitleGetSerializer(serializers.ModelSerializer):
-#     genre = GenreSerializer(many=True)
-#     category = CategorySerializer()
-#     rating = serializers.IntegerField()
-#
-#     class Meta:
-#         fields = (
-#             'id',
-#             'name',
-#             'year',
-#             'description',
-#             'genre',
-#             'category',
-#             'rating'
-#         )
-#         model = Title
+class ShoppingCardSerializers(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='recipe.id')
+    name = serializers.ReadOnlyField(source='recipe.name')
+    image = serializers.ImageField(source='recipe.image')
+    cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
 
-
-# class TitlePostSerializer(serializers.ModelSerializer):
-#     category = serializers.SlugRelatedField(
-#         queryset=Category.objects.all(),
-#         slug_field='slug',
-#         required=True
-#     )
-#     genre = serializers.SlugRelatedField(
-#         queryset=Genre.objects.all(),
-#         slug_field='slug',
-#         many=True,
-#         required=True
-#     )
-# 
-#     class Meta:
-#         fields = (
-#             'id',
-#             'name',
-#             'year',
-#             'description',
-#             'genre',
-#             'category',
-#         )
-#         model = Title
-# 
-#     def validate_year(self, year):
-#         current_year = datetime.date.today().year
-#         if not (year <= current_year):
-#             raise ValidationError('Произведение еще не вышло')
-#         return year
-
-
-# class ReviewSerializer(serializers.ModelSerializer):
-#     author = SlugRelatedField(
-#         read_only=True,
-#         slug_field='username',
-#         default=serializers.CurrentUserDefault()
-#     )
-#     title = serializers.HiddenField(default=GetTitle())
-#
-#     class Meta:
-#         fields = ('id', 'text', 'score', 'author', 'pub_date', 'title')
-#         model = Review
-#         validators = [
-#             UniqueTogetherValidator(
-#                 queryset=Review.objects.all(),
-#                 fields=('title', 'author'),
-#                 message='Можно оставить только один отзыв'
-#             )
-#         ]
-#
-#     def validate_score(self, score):
-#         if score not in range(1, 11):
-#             raise ValidationError('Допустимы оценки от 1 до 10')
-#         return score
-
-
-# class CommentSerializer(serializers.ModelSerializer):
-#     author = SlugRelatedField(
-#         read_only=True, slug_field='username'
-#     )
-#
-#     class Meta:
-#         fields = ('id', 'text', 'author', 'pub_date')
-#         model = Comment
+    class Meta:
+        model = ShoppingCart
+        fields = '__all__'

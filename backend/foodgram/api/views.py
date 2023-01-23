@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -9,13 +10,19 @@ from api.filters import RecipeFilter
 from api.pagination import LimitPagePagination
 from api.permissions import (IsRoleAdmin, AuthorOrReadOnly)
 from api.serializers import (IngredientSerializer,
+                             FavoriteSerializers,
                              TagSerializer,
                              UserEditSerializer,
                              UserSerializer,
-                             RecipeSerializers)
+                             RecipeSerializers,
+                             ShoppingCardSerializers)
+from api.mixins import CustomRecipeModelViewSet
 from foodgram_app.models import (Ingredient,
+                                 IngredientRecipe,
+                                 FavouriteRecipe,
                                  Tag,
-                                 Recipe)
+                                 Recipe,
+                                 ShoppingCart)
 from users.models import User
 
 
@@ -65,7 +72,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class RecipeViewSet(viewsets.ModelViewSet):
+class RecipeViewSet(CustomRecipeModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializers
     pagination_class = LimitPagePagination
@@ -77,14 +84,54 @@ class RecipeViewSet(viewsets.ModelViewSet):
             methods=['post', 'delete'],
             permission_classes=permissions.IsAuthenticated)
     def favorite(self, request, pk=None):
-        pass
+        match request.method:
+            case 'POST':
+                return self.add_object(
+                    model=FavouriteRecipe,
+                    pk=pk,
+                    serializers=FavoriteSerializers,
+                    user=request.user
+                )
+            case 'DELETE':
+                return self.del_object(
+                    model=FavouriteRecipe,
+                    pk=pk,
+                    user=request.user
+                )
+            case _:
+                return None
 
     @action(detail=True,
             methods=['post', 'delete'],
             permission_classes=permissions.IsAuthenticated)
     def shopping_cart(self, request, pk=None):
-        pass
+        match request.method:
+            case 'POST':
+                return self.add_object(
+                    model=ShoppingCart,
+                    pk=pk,
+                    serializers=ShoppingCardSerializers,
+                    user=request.user
+                )
+            case 'DELETE':
+                return self.del_object(
+                    model=ShoppingCart,
+                    pk=pk,
+                    user=request.user
+                )
+            case _:
+                return Response(
+                    'Не разрешено',
+                    status=status.HTTP_405_METHOD_NOT_ALLOWED
+                )
 
     @action(detail=False, permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request):
-        pass
+        user = request.user
+        ingredients = IngredientRecipe.objects.filter(
+            recipe__shopping_carts__user=user).values(
+            'ingredient__name',
+            'ingredient__measurement_unit').order_by(
+            'ingredient__name').annotate(amount=Sum('amount')
+        )
+
