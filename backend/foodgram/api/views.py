@@ -1,8 +1,8 @@
 from django.db.models import Sum
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -29,13 +29,13 @@ from users.models import User
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = permissions.AllowAny
+    permission_classes = (permissions.AllowAny,)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = permissions.AllowAny
+    permission_classes = (permissions.AllowAny,)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -78,7 +78,7 @@ class RecipeViewSet(CustomRecipeModelViewSet):
     pagination_class = LimitPagePagination
     filter_backends = DjangoFilterBackend
     filter_class = RecipeFilter
-    permission_classes = AuthorOrReadOnly
+    permission_classes = (AuthorOrReadOnly,)
 
     @action(detail=True,
             methods=['post', 'delete'],
