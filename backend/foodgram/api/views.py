@@ -1,5 +1,10 @@
+from io import BytesIO
+from django.http import FileResponse
 from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -8,7 +13,7 @@ from rest_framework.response import Response
 
 from api.filters import RecipeFilter
 from api.pagination import LimitPagePagination
-from api.permissions import (IsRoleAdmin, AuthorOrReadOnly)
+from api.permissions import (AuthorOrReadOnly, IsRoleAdmin)
 from api.serializers import (IngredientSerializer,
                              FavoriteSerializers,
                              TagSerializer,
@@ -17,12 +22,12 @@ from api.serializers import (IngredientSerializer,
                              RecipeSerializers,
                              ShoppingCardSerializers)
 from api.mixins import CustomRecipeModelViewSet
-from foodgram_app.models import (Ingredient,
-                                 IngredientRecipe,
-                                 FavouriteRecipe,
-                                 Tag,
-                                 Recipe,
-                                 ShoppingCart)
+from recipes.models import (Ingredient,
+                            IngredientRecipe,
+                            FavouriteRecipe,
+                            Tag,
+                            Recipe,
+                            ShoppingCart)
 from users.models import User
 
 
@@ -132,6 +137,30 @@ class RecipeViewSet(CustomRecipeModelViewSet):
             recipe__shopping_carts__user=user).values(
             'ingredient__name',
             'ingredient__measurement_unit').order_by(
-            'ingredient__name').annotate(amount=Sum('amount')
-        )
+            'ingredient__name').annotate(amount=Sum('amount'))
 
+        buffer = BytesIO()
+        canvas = Canvas(buffer)
+        pdfmetrics.registerFont(
+            TTFont('Country', 'Country.ttf', 'UTF-8'))
+        canvas.setFont('Country', size=36)
+        canvas.drawString(70, 800, 'Продуктовый помощник')
+        canvas.drawString(70, 760, 'список покупок:')
+        canvas.setFont('Country', size=18)
+        canvas.drawString(70, 700, 'Ингредиенты:')
+        canvas.setFont('Country', size=16)
+        canvas.drawString(70, 670, 'Название:')
+        canvas.drawString(220, 670, 'Количество:')
+        canvas.drawString(350, 670, 'Единица измерения:')
+        height = 630
+        for ingredient in ingredients:
+            canvas.drawString(70, height, f"{ingredient['ingredient__name']}")
+            canvas.drawString(250, height,
+                              f"{ingredient['amount']}")
+            canvas.drawString(380, height,
+                              f"{ingredient['ingredient__measurement_unit']}")
+            height -= 25
+        canvas.save()
+        buffer.seek(0)
+        return FileResponse(buffer, as_attachment=True,
+                            filename='Shoppinglist.pdf')

@@ -36,7 +36,8 @@ class User(AbstractUser):
         max_length=20
     )
 
-    REQUIRED_FIELDS = (username, email, first_name, last_name)
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
     @property
     def is_admin(self):

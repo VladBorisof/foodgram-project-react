@@ -12,3 +12,4 @@ pytest-pythonpath==0.7.3
 python-dotenv==0.21.0
 Pillow==9.4.0
 flake8-isort<5.0.0
+drf-extra-fields==3.4.1

@@ -10,6 +10,7 @@ DEBUG = True
 ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'users.User'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -25,7 +26,7 @@ INSTALLED_APPS = [
 
     'api',
     'users',
-    'foodgram_app'
+    'recipes'
 ]
 
 MIDDLEWARE = [
