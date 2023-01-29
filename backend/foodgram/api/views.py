@@ -1,34 +1,37 @@
 from io import BytesIO
-from django.http import FileResponse
+
 from django.db.models import Sum
+from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from rest_framework import status, viewsets, permissions
+from reportlab.pdfgen.canvas import Canvas
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.filters import RecipeFilter
+from api.mixins import CustomRecipeModelViewSet
 from api.pagination import LimitPagePagination
 from api.permissions import (AuthorOrReadOnly, IsRoleAdmin)
-from api.serializers import (IngredientSerializer,
+from api.serializers import (FollowUserSerializers,
                              FavoriteSerializers,
+                             IngredientSerializer,
                              TagSerializer,
                              UserEditSerializer,
                              UserSerializer,
                              RecipeSerializers,
                              ShoppingCardSerializers)
-from api.mixins import CustomRecipeModelViewSet
-from recipes.models import (Ingredient,
+from recipes.models import (FavouriteRecipe,
+                            Ingredient,
                             IngredientRecipe,
-                            FavouriteRecipe,
                             Tag,
                             Recipe,
                             ShoppingCart)
-from users.models import User
+from users.models import Follow, User
 
 
 class TagViewSet(viewsets.ModelViewSet):
@@ -75,6 +78,42 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    @action(detail=False, permission_classes=[IsAuthenticated])
+    def subscriptions(self, request):
+        queryset = Follow.objects.filter(user=request.user)
+        page = self.paginate_queryset(queryset)
+        serializer = FollowUserSerializers(page, many=True,
+                                           context={'request': request})
+        return self.get_paginated_response(serializer.data)
+
+    @action(detail=True,
+            methods=['post'],
+            permission_classes=[permissions.IsAuthenticated])
+    def subscribe(self, request, id=None):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if user == author:
+            return Response({'errors': 'Вы не можете подписаться на себя.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if Follow.objects.filter(user=user, author=author).exists():
+            return Response({'errors': 'Вы уже подписались на автора.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        Follow.objects.create(user=user, author=author)
+        queryset = Follow.objects.get(user=request.user, author=author)
+        serializer = FollowUserSerializers(queryset,
+                                           context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @subscribe.mapping.delete
+    def subscribe_del(self, request, id=None):
+        user = request.user
+        author = get_object_or_404(User, id=id)
+        if not Follow.objects.filter(user=user, author=author).exists():
+            return Response({'errors': 'Подписки не существует.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        Follow.objects.get(user=user, author=author).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(CustomRecipeModelViewSet):

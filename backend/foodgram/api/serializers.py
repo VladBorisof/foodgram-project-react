@@ -1,18 +1,15 @@
-from django.core.exceptions import ValidationError
 from django.contrib.auth.hashers import make_password
-from rest_framework import serializers
+from django.core.exceptions import ValidationError
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework.relations import SlugRelatedField
-from rest_framework.validators import UniqueTogetherValidator
+from rest_framework import serializers
 
-from api.mixins import CustomRecipeModelViewSet
-from recipes.models import (Ingredient,
+from recipes.models import (FavouriteRecipe,
+                            Ingredient,
                             IngredientRecipe,
-                            Tag,
                             Recipe,
-                            FavouriteRecipe,
-                            ShoppingCart)
-from users.models import User, Follow
+                            ShoppingCart,
+                            Tag)
+from users.models import Follow, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -29,7 +26,39 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CustomCreateUserSerializers(serializers.ModelSerializer):
+class FollowUserSerializers(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='author.id')
+    email = serializers.ReadOnlyField(source='author.email')
+    username = serializers.ReadOnlyField(source='author.username')
+    first_name = serializers.ReadOnlyField(source='author.first_name')
+    last_name = serializers.ReadOnlyField(source='author.last_name')
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user
+        if user.is_anonymous:
+            return False
+        return Follow.objects.filter(user=user, author=obj.author).exists()
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        recipes_limit = request.GET.get('recipes_limit')
+        queryset = Recipe.objects.filter(author=obj.author)
+        if recipes_limit:
+            queryset = queryset[:int(recipes_limit)]
+        return FollowRecipeSerializers(queryset, many=True).data
+
+    def get_recipes_count(self, obj):
+        return Recipe.objects.filter(author=obj.author).count()
+
+    class Meta:
+        model = Follow
+        fields = '__all__'
+
+
+class CreateUserSerializers(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
@@ -44,7 +73,7 @@ class CustomCreateUserSerializers(serializers.ModelSerializer):
         validated_data['password'] = make_password(
             validated_data.get('password')
         )
-        return super(CustomCreateUserSerializers, self).create(validated_data)
+        return super(CreateUserSerializers, self).create(validated_data)
 
 
 class UserEditSerializer(serializers.ModelSerializer):
@@ -73,6 +102,12 @@ class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('username', 'confirmation_code')
         model = User
+
+
+class FollowRecipeSerializers(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class TagSerializer(serializers.ModelSerializer):
