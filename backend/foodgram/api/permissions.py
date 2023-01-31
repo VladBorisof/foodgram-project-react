@@ -13,6 +13,7 @@ class AuthorOrReadOnly(permissions.BasePermission):
                 or request.user.is_admin
                 or request.user.is_superuser)
 
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         return (
@@ -35,7 +36,7 @@ class ReviewCommentCustomPermission(permissions.BasePermission):
         user = request.user
         if request.method in permissions.SAFE_METHODS:
             return True
-        if isinstance(user, AnonymousUser):
+        if user.is_anonymous:
             return False
         return (user.is_authenticated or (
                 user.is_admin or user.is_superuser or user.is_moderator))
@@ -44,7 +45,7 @@ class ReviewCommentCustomPermission(permissions.BasePermission):
         user = request.user
         if request.method in permissions.SAFE_METHODS:
             return True
-        if isinstance(user, AnonymousUser):
+        if user.is_anonymous:
             return False
         return obj.author == user or (
             user.is_admin or user.is_superuser or user.is_moderator)

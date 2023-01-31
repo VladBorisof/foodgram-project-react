@@ -99,6 +99,17 @@ class IngredientRecipe(models.Model):
         verbose_name='Count'
     )
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'recipe'],
+                name='unique_ingredient_recipe',
+            )
+        ]
+        verbose_name = 'Ingredient'
+        verbose_name_plural = 'Ingredients'
+        ordering = ['-added_to_ingredients']
+
 
 class FavouriteRecipe(models.Model):
     user = models.ForeignKey(

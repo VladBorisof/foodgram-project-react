@@ -157,21 +157,21 @@ class RecipeSerializers(serializers.ModelSerializer):
         return ShoppingCart.objects.filter(user=user, recipe=obj.id).exists()
 
     def validate(self, data):
-        ingredients = self.initial_data.get('ingredients')
+        ingredients = data.get('ingredients')
         ingredients_list = {}
-        if ingredients:
-            for ingredient in ingredients:
-                if ingredient.get('id') in ingredients_list:
-                    raise ValidationError(
-                        'Ингредиент может быть добавлен только один раз')
-                if int(ingredient.get('amount')) <= 0:
-                    raise ValidationError(
-                        'Добавьте количество для ингредиента больше 0'
-                    )
-                ingredients_list[ingredient.get('id')] = ingredients_list.get('amount')
-            return data
-        else:
+        if not ingredients:
             raise ValidationError('Добавьте ингредиент в рецепт')
+
+        for ingredient in ingredients:
+            if ingredient.get('id') in ingredients_list:
+                raise ValidationError(
+                    'Ингредиент может быть добавлен только один раз')
+            if int(ingredient.get('amount')) <= 0:
+                raise ValidationError(
+                    'Добавьте количество для ингредиента больше 0'
+                )
+            ingredients_list[ingredient.get('id')] = ingredients_list.get('amount')
+        return data
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
         for ingredient_get in ingredients_set:

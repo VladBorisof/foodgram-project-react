@@ -99,8 +99,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if Follow.objects.filter(user=user, author=author).exists():
             return Response({'errors': 'Вы уже подписались на автора.'},
                             status=status.HTTP_400_BAD_REQUEST)
-        Follow.objects.create(user=user, author=author)
-        queryset = Follow.objects.get(user=request.user, author=author)
+        queryset = Follow.objects.create(user=user, author=author)
         serializer = FollowUserSerializers(queryset,
                                            context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)

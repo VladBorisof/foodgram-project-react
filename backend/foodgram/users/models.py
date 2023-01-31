@@ -67,7 +67,11 @@ class Follow(models.Model):
     )
 
     class Meta:
-        pass
+        ordering = ('-id',)
+        verbose_name = 'Follow'
+        verbose_name_plural = 'Follows'
+        models.UniqueConstraint(
+            fields=['user', 'author'], name='unique_recording')
 
     def __str__(self):
         return f'{self.user} follow to {self.author}'

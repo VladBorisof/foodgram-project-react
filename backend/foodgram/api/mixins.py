@@ -13,8 +13,7 @@ class CustomRecipeModelViewSet(viewsets.ModelViewSet):
                 {'errors': f'{recipe} уже добавлен в {model}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        model.objects.create(user=user, recipe=recipe)
-        queryset = model.objects.get(user=user, recipe=recipe)
+        queryset = model.objects.create(user=user, recipe=recipe)
         serializer = serializers(queryset)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
