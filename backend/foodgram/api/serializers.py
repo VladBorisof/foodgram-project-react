@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
@@ -156,31 +157,39 @@ class RecipeSerializers(serializers.ModelSerializer):
             return False
         return ShoppingCart.objects.filter(user=user, recipe=obj.id).exists()
 
+    def to_representation(self, instance):
+        """Convert `username` to lowercase."""
+        ret = super().to_representation(instance)
+        ret['username'] = ret['username'].lower()
+        return ret
+
     def validate(self, data):
         ingredients = data.get('ingredients')
-        ingredients_list = {}
+        ingredients_contain = {}
         if not ingredients:
             raise ValidationError('Добавьте ингредиент в рецепт')
 
         for ingredient in ingredients:
-            if ingredient.get('id') in ingredients_list:
+            if ingredient.get('id') in ingredients_contain:
                 raise ValidationError(
                     'Ингредиент может быть добавлен только один раз')
             if int(ingredient.get('amount')) <= 0:
                 raise ValidationError(
                     'Добавьте количество для ингредиента больше 0'
                 )
-            ingredients_list[ingredient.get('id')] = ingredients_list.get('amount')
+            ingredients_contain[ingredient.get('id')] = ingredients_contain.get('amount')
         return data
 
     def ingredient_recipe_create(self, ingredients_set, recipe):
-        for ingredient_get in ingredients_set:
-            ingredient = Ingredient.objects.get(id=ingredient_get.get('id'))
-            IngredientRecipe.objects.create(
+        objs = []
+        for ingred in ingredients_set:
+            ingredient = get_object_or_404(Ingredient, pk=ingred.get('id'))
+            objs.append(IngredientRecipe(
                 ingredient=ingredient,
                 recipe=recipe,
-                amount=ingredient_get.get('amount')
-            )
+                amount=ingred.get('amount')
+            ))
+        IngredientRecipe.objects.bulk_create(objs)
 
     def create(self, validated_data):
         image = validated_data.pop('image')
@@ -194,11 +203,12 @@ class RecipeSerializers(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        instance.image = validated_data.get('image', instance.image)
-        instance.name = validated_data.get('name', instance.name)
-        instance.text = validated_data.get('text', instance.text)
-        instance.cooking_time = validated_data.get('cooking_time',
-                                                   instance.cooking_time)
+        # instance.image = validated_data.get('image', instance.image)
+        # instance.name = validated_data.get('name', instance.name)
+        # instance.text = validated_data.get('text', instance.text)
+        # instance.cooking_time = validated_data.get('cooking_time',
+        #                                            instance.cooking_time)
+        super().update(instance, validated_data)
         instance.tags.clear()
         tags = self.initial_data.get('tags')
         instance.tags.set(tags)
