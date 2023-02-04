@@ -29,3 +29,5 @@
 - Нужно теперь писать вьюсеты и серилизаторы!
 
 ### 13.01.2023
+
+# ./manage.py makemigrations recipes --empty --name 'add_tag'

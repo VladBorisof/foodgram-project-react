@@ -158,9 +158,8 @@ class RecipeSerializers(serializers.ModelSerializer):
         return ShoppingCart.objects.filter(user=user, recipe=obj.id).exists()
 
     def to_representation(self, instance):
-        """Convert `username` to lowercase."""
         ret = super().to_representation(instance)
-        ret['username'] = ret['username'].lower()
+        ret['ingredients'] = ret['ingredients']
         return ret
 
     def validate(self, data):

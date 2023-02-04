@@ -108,7 +108,6 @@ class IngredientRecipe(models.Model):
         ]
         verbose_name = 'Ingredient'
         verbose_name_plural = 'Ingredients'
-        ordering = ['-added_to_ingredients']
 
 
 class FavouriteRecipe(models.Model):

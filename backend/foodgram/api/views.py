@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from django.db.models import Sum
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -87,9 +87,7 @@ class UserViewSet(viewsets.ModelViewSet):
                                            context={'request': request})
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True,
-            methods=['post'],
-            permission_classes=[permissions.IsAuthenticated])
+    @action(detail=True, methods=['post'])
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
@@ -200,5 +198,11 @@ class RecipeViewSet(CustomRecipeModelViewSet):
             height -= 25
         canvas.save()
         buffer.seek(0)
-        return FileResponse(buffer, as_attachment=True,
+        response = FileResponse(buffer, as_attachment=True,
                             filename='Shoppinglist.pdf')
+
+        text = f"{ingredient['ingredient__name']} - {ingredient['amount']}"
+        filename = 'shop.txt'
+        response = HttpResponse(text, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filenamr={filename}'
+        return response
