@@ -117,8 +117,8 @@ class RecipeViewSet(CustomRecipeModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializers
     pagination_class = LimitPagePagination
-    filter_backends = DjangoFilterBackend
-    filter_class = RecipeFilter
+    # filter_backends = DjangoFilterBackend
+    # filter_class = RecipeFilter
     permission_classes = (AuthorOrReadOnly,)
 
     @action(detail=True,
