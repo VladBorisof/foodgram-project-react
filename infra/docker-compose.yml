@@ -14,8 +14,8 @@ services:
 
   web:
     build:
-      context: ../backend/foodgram
-      dockerfile: Dockerfile
+      context: vlborisov/foodgram_back:latest
+#      dockerfile: Dockerfile
     restart: always
     expose:
       - 8000
@@ -27,12 +27,12 @@ services:
       - static_value:/app/static/
       - media_value:/app/media/
 
-#  frontend:
-#    build:
-#      context: ../frontend
+  frontend:
+    build:
+      context: vlborisov/foodgram_front:latest
 #      dockerfile: Dockerfile
-#    volumes:
-#      - ../frontend/:/app/result_build/
+    volumes:
+      - ../frontend/:/app/result_build/
 
   nginx:
     image: nginx:1.19.3
