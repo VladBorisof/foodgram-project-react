@@ -13,8 +13,7 @@ services:
 #      - ./.env
 
   web:
-    build:
-      context: vlborisov/foodgram_back:latest
+    image: vlborisov/foodgram_back:latest
 #      dockerfile: Dockerfile
     restart: always
     expose:
@@ -28,8 +27,7 @@ services:
       - media_value:/app/media/
 
   frontend:
-    build:
-      context: vlborisov/foodgram_front:latest
+    image: vlborisov/foodgram_front:latest
 #      dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
