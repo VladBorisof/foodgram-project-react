@@ -6,11 +6,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen.canvas import Canvas
-from rest_framework import permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from api.filters import RecipeFilter
@@ -25,7 +25,7 @@ from api.serializers import (FollowUserSerializers,
                              UserSerializer,
                              RecipeSerializers,
                              ShoppingCardSerializers)
-from recipes.models import (FavouriteRecipe,
+from recipes.models import (Favorite,
                             Ingredient,
                             IngredientRecipe,
                             Tag,
@@ -37,13 +37,13 @@ from users.models import Follow, User
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (AllowAny,)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -79,7 +79,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    @action(detail=False, permission_classes=[IsAuthenticated])
+    @action(detail=False, permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=request.user)
         page = self.paginate_queryset(queryset)
@@ -123,19 +123,19 @@ class RecipeViewSet(CustomRecipeModelViewSet):
 
     @action(detail=True,
             methods=['post', 'delete'],
-            permission_classes=permissions.IsAuthenticated)
+            permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk=None):
         match request.method:
             case 'POST':
-                return self.add_object(
-                    model=FavouriteRecipe,
+                return self.add_obj(
+                    model=Favorite,
                     pk=pk,
                     serializers=FavoriteSerializers,
                     user=request.user
                 )
             case 'DELETE':
-                return self.del_object(
-                    model=FavouriteRecipe,
+                return self.del_obj(
+                    model=Favorite,
                     pk=pk,
                     user=request.user
                 )
@@ -144,18 +144,18 @@ class RecipeViewSet(CustomRecipeModelViewSet):
 
     @action(detail=True,
             methods=['post', 'delete'],
-            permission_classes=permissions.IsAuthenticated)
+            permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk=None):
         match request.method:
             case 'POST':
-                return self.add_object(
+                return self.add_obj(
                     model=ShoppingCart,
                     pk=pk,
                     serializers=ShoppingCardSerializers,
                     user=request.user
                 )
             case 'DELETE':
-                return self.del_object(
+                return self.del_obj(
                     model=ShoppingCart,
                     pk=pk,
                     user=request.user
@@ -166,7 +166,7 @@ class RecipeViewSet(CustomRecipeModelViewSet):
                     status=status.HTTP_405_METHOD_NOT_ALLOWED
                 )
 
-    @action(detail=False, permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):
         user = request.user
         ingredients = IngredientRecipe.objects.filter(

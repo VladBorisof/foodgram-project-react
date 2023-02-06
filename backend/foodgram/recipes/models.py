@@ -110,7 +110,7 @@ class IngredientRecipe(models.Model):
         verbose_name_plural = 'Ingredients'
 
 
-class FavouriteRecipe(models.Model):
+class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         related_name='favourite_recipes',
@@ -123,10 +123,6 @@ class FavouriteRecipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='recipe'
     )
-    added_to_favorites = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='added at'
-    )
 
     class Meta:
         constraints = [
@@ -137,7 +133,6 @@ class FavouriteRecipe(models.Model):
         ]
         verbose_name = 'Favorite'
         verbose_name_plural = 'Favorites'
-        ordering = ['-added_to_favorites']
 
     def __str__(self):
         return f'{self.user.username} - {self.recipe.name}'

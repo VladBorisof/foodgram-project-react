@@ -4,7 +4,7 @@ from django.shortcuts import get_object_or_404
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
-from recipes.models import (FavouriteRecipe,
+from recipes.models import (Favorite,
                             Ingredient,
                             IngredientRecipe,
                             Recipe,
@@ -114,7 +114,7 @@ class FollowRecipeSerializers(serializers.ModelSerializer):
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('id', 'name', 'color', 'slug')
+        fields = '__all__'
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -148,8 +148,7 @@ class RecipeSerializers(serializers.ModelSerializer):
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
-        return FavouriteRecipe.objects.filter(user=user,
-                                              recipe=obj.id).exists()
+        return Favorite.objects.filter(user=user, recipe=obj.id).exists()
 
     def get_is_in_shopping_cart(self, obj):
         user = self.context.get('request').user
@@ -229,7 +228,7 @@ class FavoriteSerializers(serializers.ModelSerializer):
     cooking_time = serializers.ReadOnlyField(source='recipe.cooking_time')
 
     class Meta:
-        model = FavouriteRecipe
+        model = Favorite
         fields = '__all__'
 
 
