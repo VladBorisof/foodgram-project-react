@@ -1,36 +1,37 @@
 version: '3.3'
 
 services:
-#  db:
-#    image: postgres:13.0-alpine
-#    volumes:
-#      - db_value:/var/lib/postgresql/data/
-#    ports:
-#      - "5432:5432"
+  db:
+    image: postgres:13.0-alpine
+    volumes:
+      - db_value:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
 #    environment:
 #      - "POSTGRES_HOST_AUTH_METHOD=trust"
-#    env_file:
-#      - ./.env
+    env_file:
+      - ./.env
 
   web:
-    image: vlborisov/foodgram_back:latest
-#      dockerfile: Dockerfile
+    build:
+      context: ../backend/foodgram
+      dockerfile: Dockerfile
+#    image: vlborisov/foodgram_back:latest
     restart: always
     expose:
       - 8000
-#    depends_on:
-#      - db
+    depends_on:
+      - db
     env_file:
       - ./.env
     volumes:
       - static_value:/app/static/
       - media_value:/app/media/
 
-  frontend:
-    image: vlborisov/foodgram_front:latest
-#      dockerfile: Dockerfile
-    volumes:
-      - ../frontend/:/app/result_build/
+#  frontend:
+#    image: vlborisov/foodgram_front:latest
+#    volumes:
+#      - ../frontend/:/app/result_build/
 
   nginx:
     image: nginx:1.19.3

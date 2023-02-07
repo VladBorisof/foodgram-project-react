@@ -1,4 +1,9 @@
 # Foodgram
+
+# IP
+ - `51.250.26.167`
+
+
 ## Прогресс
 ### 05.01.2023
 1. Собрать все в контейнерах
@@ -32,9 +37,13 @@
 
 # ./manage.py makemigrations recipes --empty --name 'add_tag'
 
+`sudo su`
 ```
-sudo docker compose exec web python manage.py migrate
-sudo docker compose exec web python manage.py createsuperuser
-sudo docker compose exec web python manage.py collectstatic --no-input 
-
+docker compose exec web python manage.py migrate
+```
+```
+docker compose exec web python manage.py createsuperuser
+```
+```
+docker compose exec web python manage.py collectstatic --no-input 
 ```
