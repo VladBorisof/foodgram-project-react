@@ -7,8 +7,8 @@ services:
       - db_value:/var/lib/postgresql/data/
     ports:
       - "5432:5432"
-#    environment:
-#      - "POSTGRES_HOST_AUTH_METHOD=trust"
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
     env_file:
       - ./.env
 
