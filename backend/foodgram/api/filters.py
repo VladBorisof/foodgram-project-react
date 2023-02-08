@@ -1,8 +1,8 @@
-from django_filters import filters
+from django_filters import FilterSet, CharFilter
 from django_filters.rest_framework import FilterSet, filters
 from rest_framework.filters import SearchFilter
 
-from recipes.models import Recipe, Tag
+from recipes.models import Recipe, Tag, Ingredient
 from users.models import User
 
 
@@ -33,5 +33,12 @@ class RecipeFilter(FilterSet):
         fields = ('tags', 'author')
 
 
-class IngredientSearchFilter(SearchFilter):
-    search_param = 'name'
+class IngredientsSearchFilter(FilterSet):
+    name = CharFilter(
+        field_name="name",
+        lookup_expr="istartswith",
+    )
+
+    class Meta:
+        model = Ingredient
+        fields = ("name",)

@@ -234,7 +234,7 @@ class Api {
   getUser ({ id }) {
     const token = localStorage.getItem('token')
     return fetch(
-      this._url + `/api/users/${id}/`,
+      `/api/users/${id}/`,
       {
         method: 'GET',
         headers: {

@@ -1,11 +1,10 @@
+from datetime import datetime
 from io import BytesIO
 
 from django.db.models import Sum
 from django.http import FileResponse, HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen.canvas import Canvas
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -13,7 +12,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from api.filters import RecipeFilter
+from api.filters import RecipeFilter, IngredientsSearchFilter
 from api.mixins import CustomRecipeModelViewSet
 from api.pagination import LimitPagePagination
 from api.permissions import (AuthorOrReadOnly, IsRoleAdmin)
@@ -23,7 +22,7 @@ from api.serializers import (FollowUserSerializers,
                              TagSerializer,
                              UserEditSerializer,
                              UserSerializer,
-                             RecipeSerializers,
+                             CreateRecipeSerializer,
                              ShoppingCardSerializers)
 from recipes.models import (Favorite,
                             Ingredient,
@@ -44,6 +43,9 @@ class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientsSearchFilter
+    pagination_class = None
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -115,7 +117,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(CustomRecipeModelViewSet):
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializers
+    serializer_class = CreateRecipeSerializer
     pagination_class = LimitPagePagination
     # filter_backends = DjangoFilterBackend
     # filter_class = RecipeFilter
@@ -169,40 +171,29 @@ class RecipeViewSet(CustomRecipeModelViewSet):
     @action(detail=False, permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):
         user = request.user
+        if not user.shopping_cart.exists():
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         ingredients = IngredientRecipe.objects.filter(
             recipe__shopping_carts__user=user).values(
             'ingredient__name',
             'ingredient__measurement_unit').order_by(
             'ingredient__name').annotate(amount=Sum('amount'))
 
-        buffer = BytesIO()
-        canvas = Canvas(buffer)
-        pdfmetrics.registerFont(
-            TTFont('Country', 'Country.ttf', 'UTF-8'))
-        canvas.setFont('Country', size=36)
-        canvas.drawString(70, 800, 'Продуктовый помощник')
-        canvas.drawString(70, 760, 'список покупок:')
-        canvas.setFont('Country', size=18)
-        canvas.drawString(70, 700, 'Ингредиенты:')
-        canvas.setFont('Country', size=16)
-        canvas.drawString(70, 670, 'Название:')
-        canvas.drawString(220, 670, 'Количество:')
-        canvas.drawString(350, 670, 'Единица измерения:')
-        height = 630
-        for ingredient in ingredients:
-            canvas.drawString(70, height, f"{ingredient['ingredient__name']}")
-            canvas.drawString(250, height,
-                              f"{ingredient['amount']}")
-            canvas.drawString(380, height,
-                              f"{ingredient['ingredient__measurement_unit']}")
-            height -= 25
-        canvas.save()
-        buffer.seek(0)
-        response = FileResponse(buffer, as_attachment=True,
-                            filename='Shoppinglist.pdf')
+        today = datetime.today()
+        shopping_list = (
+            f'Список покупок для: {user.get_full_name()}\n\n'
+            f'Дата: {today:%Y-%m-%d}\n\n'
+        )
+        shopping_list += '\n'.join([
+            f'- {ingredient["ingredient__name"]} '
+            f'({ingredient["ingredient__measurement_unit"]})'
+            f' - {ingredient["amount"]}'
+            for ingredient in ingredients
+        ])
 
-        text = f"{ingredient['ingredient__name']} - {ingredient['amount']}"
-        filename = 'shop.txt'
-        response = HttpResponse(text, content_type='text/plain')
-        response['Content-Disposition'] = f'attachment; filenamr={filename}'
+        filename = f'{user.username}_shopping_list.txt'
+        response = HttpResponse(shopping_list, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+
         return response
+

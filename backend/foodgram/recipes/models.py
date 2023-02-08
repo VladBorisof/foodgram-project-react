@@ -57,6 +57,12 @@ class Recipe(models.Model):
         max_length=200,
         verbose_name='name'
     )
+    ingredients = models.ManyToManyField(
+        Ingredient,
+        through='IngredientRecipe',
+        related_name='recipes',
+        verbose_name='ingredients',
+    )
     image = models.ImageField(
         verbose_name='image',
         upload_to='recipes/'
@@ -86,17 +92,16 @@ class IngredientRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='recipes',
         verbose_name='ingredient'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='ingredients',
+        related_name='ingredients_list',
         verbose_name='recipe'
     )
     amount = models.PositiveIntegerField(
-        verbose_name='Count'
+        verbose_name='amount'
     )
 
     class Meta:
