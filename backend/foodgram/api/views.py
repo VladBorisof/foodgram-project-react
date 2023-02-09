@@ -1,8 +1,7 @@
 from datetime import datetime
-from io import BytesIO
 
 from django.db.models import Sum
-from django.http import FileResponse, HttpResponse
+from django.http import HttpResponse
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import status, viewsets

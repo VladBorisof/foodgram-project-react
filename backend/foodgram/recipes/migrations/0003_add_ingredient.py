@@ -2,7 +2,6 @@
 
 from django.db import migrations
 from pathlib import Path
-import csv
 
 
 data = Path('ingredients.csv')
@@ -10,19 +9,23 @@ data = Path('ingredients.csv')
 
 def add_ingredients(apps, schema_editor):
     Ingredient = apps.get_model('recipes', 'Ingredient')
-    with open(data, newline='') as csvfile:
-        ingredients = csv.reader(csvfile, delimiter=',', quotechar='|')
-        for ingredient in ingredients:
-            Ingredient(name=ingredient[0],
-                       measurement_unit=ingredient[1]).save()
+    with open(data, 'r') as csvfile:
+        for ingredient in csvfile.readlines():
+            ingredient = ingredient.rstrip().split(',')
+            measurement_unit = ingredient[-1]
+            name = ','.join(ingredient[:-1])
+
+            Ingredient(name=name,
+                       measurement_unit=measurement_unit).save()
 
 
 def remove_ingredients(apps, schema_editor):
     Ingredient = apps.get_model('recipes', 'Ingredient')
-    with open(data, newline='') as csvfile:
-        ingredients = csv.reader(csvfile, delimiter=',', quotechar='|')
-        for ingredient in ingredients:
-            Ingredient.objects.get(name=ingredient[0]).delete()
+    with open(data, 'r') as csvfile:
+        for ingredient in csvfile:
+            ingredient = ingredient.rstrip().split(',')
+            name = ','.join(ingredient[:-1])
+            Ingredient.objects.get(name=name).delete()
 
 
 class Migration(migrations.Migration):
