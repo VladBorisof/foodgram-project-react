@@ -199,7 +199,7 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
     #         ingredients_contain[ingredient.get('id')] = ingredients_contain.get('amount')
     #     return value
 
-    @staticmethod
+    @staticmethoda
     def create_ingredients(ingredients_set, recipe):
         obj = []
         for ingredient in ingredients_set:
