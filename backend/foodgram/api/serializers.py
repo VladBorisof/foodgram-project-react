@@ -1,4 +1,4 @@
-from django.db import transaction
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
@@ -14,18 +14,44 @@ from recipes.models import (Favorite,
 from users.models import Follow, User
 
 
-class UserSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.SerializerMethodField()
+class UserRegistrationSerializer(UserCreateSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "password",
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def create(self, validated_data):
+        # user = User.objects.create(
+        #     email=validated_data["email"],
+        #     username=validated_data["username"],
+        #     first_name=validated_data["first_name"],
+        #     last_name=validated_data["last_name"],
+        # )
+        user = super().create(validated_data)
+        user.set_password(validated_data["password"])
+        user.save()
+        return user
+
+
+class UsersSerializer(UserSerializer):
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = '__all__'
 
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
         return Follow.objects.filter(user=user, author=obj.id).exists()
-
-    class Meta:
-        model = User
-        fields = '__all__'
 
 
 class FollowUserSerializers(serializers.ModelSerializer):
@@ -121,7 +147,7 @@ class TagSerializer(serializers.ModelSerializer):
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ('name', 'measurement_unit',)
+        fields = '__all__'
 
 
 class IngredientRecipeSerializers(serializers.ModelSerializer):
@@ -144,11 +170,6 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = '__all__'
-        #     (
-        #     'id', 'tags', 'author', 'ingredients',
-        #     'is_favorited', 'is_in_shopping_cart',
-        #     'name', 'image', 'text', 'cooking_time',
-        # )
 
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
@@ -183,35 +204,38 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
             }
         ).data
 
-    # def validate_ingredients(self, value):
-    #     ingredients_contain = {}
-    #     if not value:
-    #         raise ValidationError('Добавьте ингредиент в рецепт')
-    #
-    #     for ingredient in value:
-    #         if ingredient.get('id') in ingredients_contain:
-    #             raise ValidationError(
-    #                 'Ингредиент может быть добавлен только один раз')
-    #         if int(ingredient.get('amount')) <= 0:
-    #             raise ValidationError(
-    #                 'Добавьте количество для ингредиента больше 0'
-    #             )
-    #         ingredients_contain[ingredient.get('id')] = ingredients_contain.get('amount')
-    #     return value
+    def validate_ingredients(self, value):
+        ingredients_contain = {}
+        if not value:
+            raise ValidationError('Добавьте ингредиент в рецепт')
 
-    @staticmethoda
+        for ingredient in value:
+            if ingredient.get('id') in ingredients_contain:
+                raise ValidationError(
+                    'Ингредиент может быть добавлен только один раз')
+            if int(ingredient.get('amount')) <= 0:
+                raise ValidationError(
+                    'Добавьте количество для ингредиента больше 0'
+                )
+            ingredients_contain[ingredient.get('id')] = ingredients_contain.get('amount')
+        return value
+
+    @staticmethod
     def create_ingredients(ingredients_set, recipe):
-        obj = []
+        ingredients = []
         for ingredient in ingredients_set:
-            ing = Ingredient.objects.get(pk=ingredient.get('id'))
-            obj.append(
+            ingredient_name = get_object_or_404(
+                Ingredient,
+                pk=ingredient.get('id')
+            )
+            ingredients.append(
                 IngredientRecipe(
                     recipe=recipe,
-                    ingredient=Ingredient.objects.get(pk=ingredient.get('id')),
+                    ingredient=ingredient_name,
                     amount=ingredient.get('amount')
                 )
             )
-        IngredientRecipe.objects.bulk_create(obj)
+        IngredientRecipe.objects.bulk_create(ingredients)
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
@@ -223,9 +247,9 @@ class CreateRecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients')
         IngredientRecipe.objects.filter(recipe=instance).delete()
-        ingredients_set = self.initial_data.get('ingredients')
-        self.create_ingredients(ingredients_set, instance)
+        self.create_ingredients(ingredients, instance)
         return super().update(instance, validated_data)
 
 
