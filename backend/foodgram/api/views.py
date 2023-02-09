@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from django.db.models import Sum
 from django.http import HttpResponse
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-
+from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -11,16 +10,16 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
-from api.filters import RecipeFilter, IngredientsSearchFilter
+from api.filters import IngredientsSearchFilter
 from api.mixins import CustomRecipeModelViewSet
 from api.pagination import LimitPagePagination
-from api.permissions import (AuthorOrReadOnly, IsRoleAdmin)
+from api.permissions import (AuthorOrReadOnly)
 from api.serializers import (FollowUserSerializers,
                              FavoriteSerializers,
                              IngredientSerializer,
                              TagSerializer,
                              UserEditSerializer,
-                             UserSerializer,
+                             UsersSerializer,
                              CreateRecipeSerializer,
                              ShoppingCardSerializers)
 from recipes.models import (Favorite,
@@ -36,6 +35,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (AllowAny,)
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -47,11 +47,11 @@ class IngredientViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UsersViewSet(UserViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = UsersSerializer
     pagination_class = PageNumberPagination
-    permission_classes = (IsRoleAdmin,)
+    permission_classes = (IsAuthenticated,)
     lookup_field = 'username'
 
     @action(
@@ -88,7 +88,10 @@ class UserViewSet(viewsets.ModelViewSet):
                                            context={'request': request})
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=['post'])
+    @action(
+        detail=True, methods=['post',],
+        permission_classes=[IsAuthenticated]
+    )
     def subscribe(self, request, id=None):
         user = request.user
         author = get_object_or_404(User, id=id)
@@ -176,9 +179,9 @@ class RecipeViewSet(CustomRecipeModelViewSet):
             recipe__shopping_carts__user=user).values(
             'ingredient__name',
             'ingredient__measurement_unit').order_by(
-            'ingredient__name').annotate(amount=Sum('amount'))
+            'ingredient__name').annotate(count=Sum('amount'))
 
-        today = datetime.today()
+        today = timezone.now()
         shopping_list = (
             f'Список покупок для: {user.get_full_name()}\n\n'
             f'Дата: {today:%Y-%m-%d}\n\n'
@@ -186,7 +189,7 @@ class RecipeViewSet(CustomRecipeModelViewSet):
         shopping_list += '\n'.join([
             f'- {ingredient["ingredient__name"]} '
             f'({ingredient["ingredient__measurement_unit"]})'
-            f' - {ingredient["amount"]}'
+            f' - {ingredient["count"]}'
             for ingredient in ingredients
         ])
 
@@ -195,4 +198,3 @@ class RecipeViewSet(CustomRecipeModelViewSet):
         response['Content-Disposition'] = f'attachment; filename={filename}'
 
         return response
-
