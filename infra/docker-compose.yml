@@ -13,10 +13,10 @@ services:
       - ./.env
 
   web:
-#    build:
-#      context: ../backend/foodgram
-#      dockerfile: Dockerfile
-    image: vlborisov/foodgram_back:latest
+    build:
+      context: ../backend/foodgram
+      dockerfile: Dockerfile
+#    image: vlborisov/foodgram_back:latest
     restart: always
     expose:
       - 8000
