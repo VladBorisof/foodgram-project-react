@@ -1,7 +1,7 @@
-from djoser.serializers import UserCreateSerializer, UserSerializer
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
