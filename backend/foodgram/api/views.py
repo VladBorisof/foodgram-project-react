@@ -14,14 +14,12 @@ from api.filters import IngredientsSearchFilter
 from api.mixins import CustomRecipeModelViewSet
 from api.pagination import LimitPagePagination
 from api.permissions import (AuthorOrReadOnly)
-from api.serializers import (FollowUserSerializers,
-                             FavoriteSerializers,
+from api.serializers import (FollowUserSerializer,
                              IngredientSerializer,
                              TagSerializer,
                              UserEditSerializer,
                              UsersSerializer,
-                             CreateRecipeSerializer,
-                             ShoppingCardSerializers)
+                             CreateRecipeSerializer)
 from recipes.models import (Favorite,
                             Ingredient,
                             IngredientRecipe,
@@ -84,7 +82,7 @@ class UsersViewSet(UserViewSet):
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=request.user)
         page = self.paginate_queryset(queryset)
-        serializer = FollowUserSerializers(page, many=True,
+        serializer = FollowUserSerializer(page, many=True,
                                            context={'request': request})
         return self.get_paginated_response(serializer.data)
 
@@ -102,7 +100,7 @@ class UsersViewSet(UserViewSet):
             return Response({'errors': 'Вы уже подписались на автора.'},
                             status=status.HTTP_400_BAD_REQUEST)
         queryset = Follow.objects.create(user=user, author=author)
-        serializer = FollowUserSerializers(queryset,
+        serializer = FollowUserSerializer(queryset,
                                            context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -128,13 +126,13 @@ class RecipeViewSet(CustomRecipeModelViewSet):
     @action(detail=True,
             methods=['post', 'delete'],
             permission_classes=(IsAuthenticated,))
-    def favorite(self, request, pk=None):
+    def favorite(self, request, pk):
         match request.method:
             case 'POST':
                 return self.add_obj(
                     model=Favorite,
                     pk=pk,
-                    serializers=FavoriteSerializers,
+                    # serializers=FavoriteSerializers,
                     user=request.user
                 )
             case 'DELETE':
@@ -155,7 +153,7 @@ class RecipeViewSet(CustomRecipeModelViewSet):
                 return self.add_obj(
                     model=ShoppingCart,
                     pk=pk,
-                    serializers=ShoppingCardSerializers,
+                    # serializers=ShoppingCardSerializers,
                     user=request.user
                 )
             case 'DELETE':

@@ -2,19 +2,20 @@ from rest_framework import status, viewsets
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
+from api.serializers import RecipeInfoSerializer
 from recipes.models import Recipe
 
 
 class CustomRecipeModelViewSet(viewsets.ModelViewSet):
-    def add_obj(self, serializers, model, user, pk):
+    def add_obj(self, model, user, pk):
         recipe = get_object_or_404(Recipe, id=pk)
         if model.objects.filter(user=user, recipe=recipe).exists():
             return Response(
                 {'errors': f'{recipe} уже добавлен в {model}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        queryset = model.objects.create(user=user, recipe=recipe)
-        serializer = serializers(queryset)
+        model.objects.create(user=user, recipe=recipe)
+        serializer = RecipeInfoSerializer(recipe)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def del_obj(self, model, pk, user):
