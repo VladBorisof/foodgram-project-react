@@ -3,12 +3,14 @@ from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
 from api.filters import IngredientsSearchFilter
 from api.mixins import CustomRecipeModelViewSet
@@ -18,7 +20,7 @@ from api.serializers import (FollowUserSerializer,
                              IngredientSerializer,
                              TagSerializer,
                              UserEditSerializer,
-                             UsersSerializer,
+                             UsersSubscribeSerializer,
                              CreateRecipeSerializer)
 from recipes.models import (Favorite,
                             Ingredient,
@@ -29,14 +31,14 @@ from recipes.models import (Favorite,
 from users.models import Follow, User
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = (AllowAny,)
     pagination_class = None
 
 
-class IngredientViewSet(viewsets.ModelViewSet):
+class IngredientViewSet(ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny,)
@@ -47,10 +49,10 @@ class IngredientViewSet(viewsets.ModelViewSet):
 
 class UsersViewSet(UserViewSet):
     queryset = User.objects.all()
-    serializer_class = UsersSerializer
+    add_serializer = UsersSubscribeSerializer
     pagination_class = PageNumberPagination
-    permission_classes = (IsAuthenticated,)
-    lookup_field = 'username'
+    permission_classes = (DjangoModelPermissions,)
+    # lookupfield = 'username'
 
     @action(
         methods=[
@@ -58,11 +60,10 @@ class UsersViewSet(UserViewSet):
             'PATCH',
         ],
         detail=False,
-        url_path='me',
         permission_classes=(IsAuthenticated,),
         serializer_class=UserEditSerializer,
     )
-    def users_own_profile(self, request):
+    def me(self, request):
         user = request.user
         if request.method == 'GET':
             serializer = self.get_serializer(user)
@@ -87,7 +88,7 @@ class UsersViewSet(UserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(
-        detail=True, methods=['post',],
+        detail=True, methods=('GET', 'POST',),
         permission_classes=[IsAuthenticated]
     )
     def subscribe(self, request, id=None):

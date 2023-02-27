@@ -1,12 +1,13 @@
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet
 
 from api.serializers import RecipeInfoSerializer
 from recipes.models import Recipe
 
 
-class CustomRecipeModelViewSet(viewsets.ModelViewSet):
+class CustomRecipeModelViewSet(ModelViewSet):
     def add_obj(self, model, user, pk):
         recipe = get_object_or_404(Recipe, id=pk)
         if model.objects.filter(user=user, recipe=recipe).exists():
