@@ -1,4 +1,4 @@
-from django.db.models import F, Sum
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -203,29 +203,20 @@ class RecipeViewSet(CustomRecipeModelViewSet):
         if not user.shopping_cart.exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        # ingredients = Ingredient.objects.filter(
-        #     recipes__shopping_carts__user=user).values(
-        #     'ingredient__name',
-        #     'ingredient__measurement_unit').order_by(
-        #     'ingredient__name').annotate(count=Sum('amount'))
-
         ingredients = Ingredient.objects.filter(
-            recipes__recipe__in_carts__user=user
-        ).values(
-            'name',
-            measurement=F('measurement_unit')
-        ).annotate(amount=Sum('recipe__amount'))
+            recipes__in_shoping_cart__user=user
+        ).values().annotate(amount=Sum('ingredientrecipe__amount'))
 
         today = timezone.now()
         shopping_list = (
-            f'Список покупок для: {user.get_full_name()}\n\n'
+            f'Список покупок для: {user.get_full_name()}\n'
             f'Дата: {today:%Y-%m-%d}\n\n'
         )
         shopping_list += '\n'.join([
-            f'- {ingredient["ingredient__name"]} '
-            f'({ingredient["ingredient__measurement_unit"]})'
-            f' - {ingredient["count"]}'
-            for ingredient in ingredients
+            f'{idx}. {ingredient.get("name")} - '
+            f'{ingredient.get("amount")} '
+            f'{ingredient.get("measurement_unit")}'
+            for idx, ingredient in enumerate(ingredients, 1)
         ])
 
         filename = f'{user.username}_shopping_list.txt'
