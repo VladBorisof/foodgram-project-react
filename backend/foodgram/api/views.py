@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -24,7 +24,6 @@ from api.serializers import (FollowUserSerializer,
                              CreateRecipeSerializer)
 from recipes.models import (Favorite,
                             Ingredient,
-                            IngredientRecipe,
                             Tag,
                             Recipe,
                             ShoppingCart)
@@ -117,29 +116,59 @@ class UsersViewSet(UserViewSet):
 
 
 class RecipeViewSet(CustomRecipeModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.select_related('author')
     serializer_class = CreateRecipeSerializer
     pagination_class = LimitPagePagination
-    # filter_backends = DjangoFilterBackend
-    # filter_class = RecipeFilter
     permission_classes = (AuthorOrReadOnly,)
 
+    def get_queryset(self):
+        """Получает queryset в соответствии с параметрами запроса.
+        Returns:
+            QuerySet[Recipe]=: Список запрошенных объектов.
+        """
+        queryset = self.queryset
+
+        tags: list = self.request.query_params.getlist('tags')
+        if tags:
+            queryset = queryset.filter(
+                tags__slug__in=tags).distinct()
+
+        author: str = self.request.query_params.get('author')
+        if author:
+            queryset = queryset.filter(author=author)
+
+        # Следующие фильтры только для авторизованного пользователя
+        if self.request.user.is_anonymous:
+            return queryset
+
+        is_in_cart: str = self.request.query_params.get('is_in_shopping_cart')
+        if is_in_cart in ('1', 'true'):
+            queryset = queryset.filter(in_shoping_cart__user=self.request.user)
+        elif is_in_cart in ('0', 'false'):
+            queryset = queryset.exclude(in_shoping_cart__user=self.request.user)
+
+        is_favorit: str = self.request.query_params.get('is_favorited')
+        if is_favorit in ('1', 'true'):
+            queryset = queryset.filter(in_favourites__user=self.request.user)
+        if is_favorit in ('0', 'false'):
+            queryset = queryset.exclude(in_favourites__user=self.request.user)
+        return queryset
+
     @action(detail=True,
-            methods=['post', 'delete'],
+            methods=['POST', 'DELETE'],
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk):
         match request.method:
             case 'POST':
                 return self.add_obj(
-                    model=Favorite,
                     pk=pk,
-                    # serializers=FavoriteSerializers,
+                    model=Favorite,
                     user=request.user
                 )
             case 'DELETE':
                 return self.del_obj(
-                    model=Favorite,
                     pk=pk,
+                    model=Favorite,
                     user=request.user
                 )
             case _:
@@ -152,15 +181,14 @@ class RecipeViewSet(CustomRecipeModelViewSet):
         match request.method:
             case 'POST':
                 return self.add_obj(
-                    model=ShoppingCart,
                     pk=pk,
-                    # serializers=ShoppingCardSerializers,
+                    model=ShoppingCart,
                     user=request.user
                 )
             case 'DELETE':
                 return self.del_obj(
-                    model=ShoppingCart,
                     pk=pk,
+                    model=ShoppingCart,
                     user=request.user
                 )
             case _:
@@ -174,11 +202,19 @@ class RecipeViewSet(CustomRecipeModelViewSet):
         user = request.user
         if not user.shopping_cart.exists():
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        ingredients = IngredientRecipe.objects.filter(
-            recipe__shopping_carts__user=user).values(
-            'ingredient__name',
-            'ingredient__measurement_unit').order_by(
-            'ingredient__name').annotate(count=Sum('amount'))
+
+        # ingredients = Ingredient.objects.filter(
+        #     recipes__shopping_carts__user=user).values(
+        #     'ingredient__name',
+        #     'ingredient__measurement_unit').order_by(
+        #     'ingredient__name').annotate(count=Sum('amount'))
+
+        ingredients = Ingredient.objects.filter(
+            recipes__recipe__in_carts__user=user
+        ).values(
+            'name',
+            measurement=F('measurement_unit')
+        ).annotate(amount=Sum('recipe__amount'))
 
         today = timezone.now()
         shopping_list = (
