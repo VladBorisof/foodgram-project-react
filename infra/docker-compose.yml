@@ -1,41 +1,38 @@
 version: '3.3'
 
 services:
-#  db:
-#    image: postgres:13.0-alpine
-#    volumes:
-#      - db_value:/var/lib/postgresql/data/
-#    ports:
-#      - "5432:5432"
-#    environment:
-#      - "POSTGRES_HOST_AUTH_METHOD=trust"
-#    env_file:
-#      - ./.env
+  db:
+    image: postgres:13.0-alpine
+    volumes:
+      - db_value:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+    env_file:
+      - ./.env
 
   web:
-    build:
-      context: ../backend/foodgram
-      dockerfile: Dockerfile
-#    image: vlborisov/foodgram_back:latest
+    image: vlborisov/foodgram_back:v0.1
     restart: always
+    command: >
+      bash -c "python manage.py migrate &&
+      python manage.py collectstatic --noinput &&
+      gunicorn --bind 0:8000 foodgram.wsgi"
     expose:
       - 8000
-#    depends_on:
-#      - db
+    depends_on:
+      - db
     env_file:
       - ./.env
     volumes:
-      - ../backend/foodgram/db.sqlite3:/app/db.sqlite3
       - static_value:/app/static/
       - media_value:/app/media/
 
-#  frontend:
-#    build:
-#      context: ../frontend
-#      dockerfile: Dockerfile
-##    image: vlborisov/foodgram_front:latest
-#    volumes:
-#      - ../frontend/:/app/result_build/
+  frontend:
+    image: vlborisov/foodgram_front:latest
+    volumes:
+      - ../frontend/:/app/result_build/
 
   nginx:
     image: nginx:1.19.3
@@ -47,12 +44,11 @@ services:
       - ../docs/:/usr/share/nginx/html/api/docs/
       - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
       - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
-#      - static_value:/app/static/
-#      - media_value:/app/media/
-#      - static_value:/usr/share/nginx/html/static/
+      - static_value:/usr/share/nginx/html/static/
       - media_value:/usr/share/nginx/html/media/
     depends_on:
       - web
+      - frontend
 
 volumes:
   db_value:
