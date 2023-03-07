@@ -53,13 +53,6 @@ Foodgram - продуктовый помощник, позволяет публ�
 
 
 # Подготовка удалённого сервера
-...
-
-
-
-
-# ./manage.py makemigrations recipes --empty --name 'add_tag'
-
 `sudo su`
 ```
 docker compose exec web python manage.py migrate

@@ -38,7 +38,7 @@ jobs:
       with:
         context: backend/foodgram
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_back:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_back:v0.1
 
   build_frontend_and_push_to_docker_hub:
     name: Push Docker image to Docker Hub Frontend
@@ -59,7 +59,7 @@ jobs:
         with:
           context: frontend
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_front:latest
+          tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_front:v0.1
 
   deploy:
     runs-on: ubuntu-latest
