@@ -1,7 +1,8 @@
 # Проект «Продуктовый помощник»
+![](https://img.shields.io/badge/Foodgram-black?style=for-the-badge&logo={LOGO}&logoColor=white)
 
-## TODO
-- Название файла - как название рецепта
+![example workflow](https://github.com/VladBorisof/foodgram-project-react/actions/workflows/foodgram_workflow.yml/badge.svg)
+
 # IP
 ```
 158.160.27.179
