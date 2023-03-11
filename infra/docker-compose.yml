@@ -11,7 +11,10 @@ services:
       - ./.env
 
   web:
-    image: vlborisov/foodgram_back:v0.1
+    build:
+      context: ../backend/foodgram
+      dockerfile: Dockerfile
+#    image: vlborisov/foodgram_back:v0.1
     restart: always
     expose:
       - 8000
@@ -38,7 +41,7 @@ services:
       - ../docs/:/usr/share/nginx/html/api/docs/
       - ../docs/redoc.html:/usr/share/nginx/html/api/docs/redoc.html
       - ../docs/openapi-schema.yml:/usr/share/nginx/html/api/docs/openapi-schema.yml
-      - static_value:/usr/share/nginx/html/static/
+#      - static_value:/usr/share/nginx/html/static/
       - media_value:/usr/share/nginx/html/media/
     depends_on:
       - web
