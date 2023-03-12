@@ -16,17 +16,17 @@ from api.mixins import CustomRecipeModelViewSet, CreateAndDeleteMixin
 from api.pagination import LimitPagePagination
 from api.permissions import (AuthorOrReadOnly)
 from api.serializers import (FollowUserSerializer,
+                             UserSerializer,
                              IngredientSerializer,
                              TagSerializer,
                              UserEditSerializer,
-                             UsersSubscribeSerializer,
                              CreateRecipeSerializer)
 from recipes.models import (Favorite,
                             Ingredient,
                             Tag,
                             Recipe,
                             ShoppingCart)
-from users.models import Follow, User
+from users.models import Follow
 
 
 class TagViewSet(ModelViewSet):
@@ -46,12 +46,10 @@ class IngredientViewSet(ModelViewSet):
 
 
 class UsersViewSet(UserViewSet, CreateAndDeleteMixin):
-    queryset = User.objects.all()
-    add_serializer = UsersSubscribeSerializer
+    # queryset = User.objects.all()
+    add_serializer = UserSerializer
     pagination_class = PageNumberPagination
     permission_classes = (DjangoModelPermissions,)
-
-    # lookupfield = 'username'
 
     @action(
         methods=[
@@ -82,12 +80,14 @@ class UsersViewSet(UserViewSet, CreateAndDeleteMixin):
     def subscriptions(self, request):
         queryset = Follow.objects.filter(user=request.user)
         page = self.paginate_queryset(queryset)
-        serializer = FollowUserSerializer(page, many=True,
-                                          context={'request': request})
+        serializer = FollowUserSerializer(page,
+                                          many=True,
+                                          context={'request': request},)
         return self.get_paginated_response(serializer.data)
 
     @action(
-        detail=True, methods=('POST', 'DELETE',),
+        detail=True,
+        methods=('POST', 'DELETE',),
         permission_classes=[IsAuthenticated]
     )
     def subscribe(self, request, id=None):

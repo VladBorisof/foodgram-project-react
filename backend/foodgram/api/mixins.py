@@ -56,7 +56,6 @@ class CreateAndDeleteMixin:
         return response
 
 
-
 class CustomRecipeModelViewSet(ModelViewSet):
     def add_obj(self, model, user, pk):
         recipe = get_object_or_404(Recipe, id=pk)
