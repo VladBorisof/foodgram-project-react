@@ -6,8 +6,9 @@ from djoser.views import UserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import DjangoModelPermissions
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import (AllowAny,
+                                        DjangoModelPermissions,
+                                        IsAuthenticated)
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -16,7 +17,7 @@ from api.mixins import CustomRecipeModelViewSet, CreateAndDeleteMixin
 from api.pagination import LimitPagePagination
 from api.permissions import (AuthorOrReadOnly)
 from api.serializers import (FollowUserSerializer,
-                             UserSerializer,
+                             UsersSerializer,
                              IngredientSerializer,
                              TagSerializer,
                              UserEditSerializer,
@@ -46,8 +47,7 @@ class IngredientViewSet(ModelViewSet):
 
 
 class UsersViewSet(UserViewSet, CreateAndDeleteMixin):
-    # queryset = User.objects.all()
-    add_serializer = UserSerializer
+    serializer_class = UsersSerializer
     pagination_class = PageNumberPagination
     permission_classes = (DjangoModelPermissions,)
 
@@ -82,14 +82,12 @@ class UsersViewSet(UserViewSet, CreateAndDeleteMixin):
         page = self.paginate_queryset(queryset)
         serializer = FollowUserSerializer(page,
                                           many=True,
-                                          context={'request': request},)
+                                          context={'request': request}, )
         return self.get_paginated_response(serializer.data)
 
-    @action(
-        detail=True,
-        methods=('POST', 'DELETE',),
-        permission_classes=[IsAuthenticated]
-    )
+    @action(detail=True,
+            methods=('POST', 'DELETE',),
+            permission_classes=[IsAuthenticated])
     def subscribe(self, request, id=None):
         return self.create_and_delete_related(
             pk=id,
@@ -98,28 +96,6 @@ class UsersViewSet(UserViewSet, CreateAndDeleteMixin):
             delete_failed_message='Вы уже подписались на автора.',
             field_to_create_or_delete_name='author'
         )
-        # user = request.user
-        # author = get_object_or_404(User, id=id)
-        # if user == author:
-        #     return Response({'errors': 'Вы не можете подписаться на себя.'},
-        #                     status=status.HTTP_400_BAD_REQUEST)
-        # if Follow.objects.filter(user=user, author=author).exists():
-        #     return Response({'errors': 'Вы уже подписались на автора.'},
-        #                     status=status.HTTP_400_BAD_REQUEST)
-        # queryset = Follow.objects.create(user=user, author=author)
-        # serializer = FollowUserSerializer(queryset,
-        #                                    context={'request': request})
-        # return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    # @subscribe.mapping.delete
-    # def subscribe_del(self, request, id=None):
-    #     user = request.user
-    #     author = get_object_or_404(User, id=id)
-    #     if not Follow.objects.filter(user=user, author=author).exists():
-    #         return Response({'errors': 'Подписки не существует.'},
-    #                         status=status.HTTP_400_BAD_REQUEST)
-    #     Follow.objects.get(user=user, author=author).delete()
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class RecipeViewSet(CustomRecipeModelViewSet):
@@ -166,6 +142,7 @@ class RecipeViewSet(CustomRecipeModelViewSet):
             methods=['POST', 'DELETE'],
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk):
+
         match request.method:
             case 'POST':
                 return self.add_obj(

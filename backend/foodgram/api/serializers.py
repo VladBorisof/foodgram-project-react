@@ -1,12 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer
 from drf_extra_fields.fields import Base64ImageField
-from rest_framework.serializers import (CharField,
-                                        ModelSerializer,
+from rest_framework.serializers import (ModelSerializer,
                                         SerializerMethodField,
                                         ReadOnlyField,
                                         IntegerField, ImageField)
@@ -46,13 +44,14 @@ class ShortRecipeSerializer(ModelSerializer):
     """Сериализатор для модели Recipe.
     Определён укороченный набор полей для некоторых эндпоинтов.
     """
+
     class Meta:
         model = Recipe
         fields = 'id', 'name', 'image', 'cooking_time'
         read_only_fields = '__all__',
 
 
-class UserSerializer(ModelSerializer):
+class UsersSerializer(ModelSerializer):
     """Сериализатор для использования с моделью User.
     """
     is_subscribed = SerializerMethodField()
@@ -93,84 +92,10 @@ class UserSerializer(ModelSerializer):
         Returns:
             User: Созданный пользователь.
         """
-        user = User(
-            email=validated_data['email'],
-            username=validated_data['username'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-        )
+        user = super().create(validated_data)
         user.set_password(validated_data['password'])
         user.save()
         return user
-
-# class UsersSerializer(ModelSerializer):
-#     is_subscribed = SerializerMethodField()
-#
-#     class Meta:
-#         model = User
-#         fields = (
-#             'email',
-#             'id',
-#             'username',
-#             'first_name',
-#             'last_name',
-#             'is_subscribed',
-#             'password',
-#         )
-#         extra_kwargs = {'password': {'write_only': True}}
-#         read_only_fields = 'is_subscribed',
-#
-#     def get_is_subscribed(self, obj):
-#         user = self.context.get('request').user
-#         if user.is_anonymous:
-#             return False
-#         return user.follower.filter(author=obj).exists()
-#         # return Follow.objects.filter(user=user, author=obj.id).exists()
-#
-#     def create(self, validated_data):
-#         user = super().create(validated_data)
-#         user.set_password(validated_data.get('password'))
-#         user.save()
-#         return user
-
-
-class UsersSubscribeSerializer(UserSerializer):
-    """Сериализатор вывода авторов на которых подписан текущий пользователь.
-    """
-    recipes = ShortRecipeSerializer(many=True, read_only=True)
-    recipes_count = SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count',
-        )
-        read_only_fields = '__all__',
-
-    def get_is_subscribed(*args) -> bool:
-        """Проверка подписки пользователей.
-        Переопределённый метод родительского класса для уменьшения нагрузки,
-        так как в текущей реализации всегда вернёт `True`.
-        Returns:
-            bool: True
-        """
-        return True
-
-    def get_recipes_count(self, obj: User) -> int:
-        """ Показывает общее количество рецептов у каждого автора.
-        Args:
-            obj (User): Запрошенный пользователь.
-        Returns:
-            int: Количество рецептов созданных запрошенным пользователем.
-        """
-        return obj.recipe.count()
 
 
 class FollowUserSerializer(ModelSerializer):
@@ -186,15 +111,6 @@ class FollowUserSerializer(ModelSerializer):
     class Meta:
         model = Follow
         fields = '__all__'
-        # fields = (
-        #     'email',
-        #     'id',
-        #     'username',
-        #     'first_name',
-        #     'last_name',
-        #     'is_subscribed',
-        # )
-        # read_only_fields = 'is_subscribed'
 
     def get_is_subscribed(self, obj):
         user = self.context.get('request').user
@@ -214,49 +130,9 @@ class FollowUserSerializer(ModelSerializer):
         return Recipe.objects.filter(author=obj.author).count()
 
 
-class CreateUserSerializer(ModelSerializer):
-    password = CharField(
-        write_only=True,
-        required=True,
-        style=dict(input_type='Пароль', placeholder='Пароль')
-    )
-
-    class Meta:
-        model = User
-        fields = '__all__'
-
-    def create(self, validated_data):
-        validated_data['password'] = make_password(
-            validated_data.get('password')
-        )
-        return super(CreateUserSerializer, self).create(validated_data)
-
-
 class UserEditSerializer(ModelSerializer):
     class Meta:
         fields = ('email', 'username', 'first_name', 'last_name')
-        model = User
-
-
-class SignupSerializer(ModelSerializer):
-    class Meta:
-        fields = ('email', 'id', 'username',
-                  'first_name', 'last_name', 'password')
-        model = User
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise ValidationError(
-                'Создать пользователя с именем "me" не разрешено.'
-            )
-        return value
-
-
-class TokenSerializer(ModelSerializer):
-    confirmation_code = CharField(required=True)
-
-    class Meta:
-        fields = ('username', 'confirmation_code')
         model = User
 
 
@@ -289,7 +165,7 @@ class RecipeInfoSerializer(ModelSerializer):
 class RecipeListSerializer(ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     ingredients = SerializerMethodField()
-    author = UserSerializer(read_only=True)
+    author = UsersSerializer(read_only=True)
     image = Base64ImageField()
     is_in_shopping_cart = SerializerMethodField(read_only=True)
     is_favorited = SerializerMethodField(read_only=True)
@@ -315,7 +191,8 @@ class RecipeListSerializer(ModelSerializer):
         user = self.context.get('request').user
         if user.is_anonymous:
             return False
-        return ShoppingCart.objects.filter(user=user, recipe=recipe.id).exists()
+        return ShoppingCart.objects.filter(user=user,
+                                           recipe=recipe.id).exists()
 
 
 class IngredientRecipeSerializer(ModelSerializer):
@@ -327,7 +204,7 @@ class IngredientRecipeSerializer(ModelSerializer):
 
 
 class CreateRecipeSerializer(ModelSerializer):
-    author = UserSerializer(read_only=True)
+    author = UsersSerializer(read_only=True)
     tag = TagSerializer(read_only=True, many=True)
     image = Base64ImageField()
     ingredients = IngredientRecipeSerializer(many=True)
@@ -359,7 +236,8 @@ class CreateRecipeSerializer(ModelSerializer):
                 raise ValidationError(
                     'Добавьте количество для ингредиента больше 0'
                 )
-            ingredients_contain[ingredient.get('id')] = ingredient.get('amount')
+            ingredients_contain[ingredient.get('id')] = ingredient.get(
+                'amount')
         return value
 
     @staticmethod
